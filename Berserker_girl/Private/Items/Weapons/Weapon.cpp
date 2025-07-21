@@ -82,7 +82,7 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 {
 
 	if (OtherActor == this || OtherActor == GetOwner() || ActorIsSameType(OtherActor) || DamagedActors.Contains(OtherActor)) return;
-	
+
 	// Check if enough time has passed since the last damage
 	if (LastDamageTimes.Contains(OtherActor)) {
 		float LastDamageTime = LastDamageTimes[OtherActor];
@@ -102,48 +102,6 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	{
 		HitInterface->Execute_GetHit(OtherActor, SweepResult.ImpactPoint, GetOwner());
 	}
-
-	//FHitResult BoxHit;
-	//BoxTrace(BoxHit);
-	//if (BoxHit.GetActor())
-	//{
-	//	if (ActorIsSameType(BoxHit.GetActor())) return;
-
-	//	UGameplayStatics::ApplyDamage(BoxHit.GetActor(), Damage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
-	//	ExecuteGetHit(BoxHit);
-	//	CreateFields(BoxHit.ImpactPoint);
-	//}
-
-	//·òÆ°¾´ ÄÚµå///////////////////////////////////////
-	//if (ActorIsSameType(OtherActor)) return;
-
-
-	//IHitInterface* HitInterface = Cast<IHitInterface>(OtherActor);
-	//if (HitInterface)
-	//{
-	//	UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
-	//	HitInterface->Execute_GetHit(OtherActor, SweepResult.ImpactPoint, GetOwner());
-	//}
-	//////////////////////////////////////////////
-	// 
-	// 
-	// 
-	// 
-	// 
-	//UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(OtherComp);
-	//if (!Capsule) return;  // If the hit component is not a capsule component, do nothing.
-
-
-	//... Rest of your code.
-	//if (OtherActor)
-	//{
-	//	if (ActorIsSameType(OtherActor)) return;
-
-	//	UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
-	//	FHitResult NonConstSweep = SweepResult;
-	//	ExecuteGetHit(NonConstSweep);
-	//	CreateFields(SweepResult.ImpactPoint);
-	//}
 }
 
 bool AWeapon::ActorIsSameType(AActor* OtherActor)
