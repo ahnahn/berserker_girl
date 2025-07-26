@@ -48,6 +48,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 		EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 
+
+	// 적이 주인공을 한 번이라도 봤는지 여부
+	bool bHasSeenPlayer = false;
+
+	// 주인공 마지막으로 본 방향
+	FVector LastKnownPlayerLocation = FVector::ZeroVector;
+
 private:
 
 	/** AI Behavior */
@@ -143,4 +150,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 		TSubclassOf<class AHealth_Item> AHealth_ItemClass;
+
+	UPROPERTY()
+		APawn* PlayerPawn = nullptr;
 };
