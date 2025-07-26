@@ -11,6 +11,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Items/Soul.h"
 #include "Items/Health_Item.h"
+#include "Kismet/GameplayStatics.h"
+#include "Girl.h"
 
 AEnemy::AEnemy()
 {
@@ -41,8 +43,27 @@ AEnemy::AEnemy()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(EnemyState == EEnemyState::EES_Dead) return;
+	if (EnemyState == EEnemyState::EES_Dead) return;
 	if (IsDead()) return;
+
+	// CombatTarget이 없거나 끊겼을 때, 플레이어를 본 적이 있다면 플레이어 방향 바라보기
+	if (!CombatTarget && bHasSeenPlayer && PlayerPawn && !IsDead())
+	{
+		FVector TargetLocation = (CombatTarget) ? CombatTarget->GetActorLocation() : PlayerPawn->GetActorLocation();
+		FVector Direction = TargetLocation - GetActorLocation();
+		Direction.Z = 0.f;
+
+		if (!Direction.IsNearlyZero())
+		{
+			//X축 위치로 좌우 판단
+			float Yaw = (Direction.X >= 0.f) ? 0.f : 180.f;
+			SetActorRotation(FRotator(0.f, Yaw, 0.f));
+		}
+
+		//초기화
+		bHasSeenPlayer = false;
+	}
+
 	if (EnemyState > EEnemyState::EES_Patrolling)
 	{
 		CheckCombatTarget();
@@ -105,7 +126,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 
 	if (IsInsideAttackRadius())
 	{
-		if (!IsDead()) 
+		if (!IsDead())
 		{
 			GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemy::StartAttackTimer, DelayInSeconds, false);
 			//StartAttackTimer();
@@ -120,6 +141,9 @@ void AEnemy::BeginPlay()
 	if (PawnSensing) PawnSensing->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
 	InitializeEnemy();
 	Tags.Add(FName("Enemy"));
+
+	// 플레이어 폰 가져오기
+	PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 }
 
 void AEnemy::Die_Implementation()
@@ -416,6 +440,10 @@ void AEnemy::PawnSeen(APawn* SeenPawn)
 	if (bShouldChaseTarget)
 	{
 		CombatTarget = SeenPawn;
+		//방향전환 기억
+		bHasSeenPlayer = true;
+		LastKnownPlayerLocation = SeenPawn->GetActorLocation();
+		//
 		ClearPatrolTimer();
 		ChaseTarget();
 	}
