@@ -119,7 +119,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 	FTimerHandle TimerHandle;
 
 	// Set the timer to call StartAttackTimer after a delay
-	float DelayInSeconds = 1.0f; // replace with the length of your hit reaction animation
+	//float DelayInSeconds = 0.1f; // replace with the length of your hit reaction animation
 
 
 	//GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemy::StartAttackTimer, DelayInSeconds, false);
@@ -128,8 +128,9 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 	{
 		if (!IsDead())
 		{
-			GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemy::StartAttackTimer, DelayInSeconds, false);
+			//GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemy::StartAttackTimer, DelayInSeconds, false);
 			//StartAttackTimer();
+			GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemy::StartAttackTimer, HitReactionDelay, false);
 		}
 	}
 }
