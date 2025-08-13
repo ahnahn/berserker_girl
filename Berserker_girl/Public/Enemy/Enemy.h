@@ -48,6 +48,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 		EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat)
+		float HitReactionDelay = 0.2f;
+
 
 	// 적이 주인공을 한 번이라도 봤는지 여부
 	bool bHasSeenPlayer = false;
@@ -138,6 +141,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 		float AttackMax = 0.4f;
+
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 		float ChasingSpeed = 300.f;
