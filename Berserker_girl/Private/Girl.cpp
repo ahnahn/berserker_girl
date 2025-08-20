@@ -1,697 +1,416 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
-
-
-
 #include "Girl.h"
-
 #include "GameFramework/CharacterMovementComponent.h"
-
 #include "Components/AttributeComponent.h"
-
 #include "Items/Item.h"
-
 #include "Items/Weapons/Weapon.h"
-
 #include "Components/StaticMeshComponent.h"
-
 #include "Kismet/KismetMathLibrary.h"
-
 #include "HUD/GirlHUD.h"
-
 #include "HUD/GirlOverlay.h"
-
-//#include "Items/Soul.h"
-
 #include "Components/CapsuleComponent.h"
-
+#include "Items/Health_Item.h"
+#include "Kismet/GameplayStatics.h"
+//#include "Items/Soul.h"
 //#include "Items/Treasure.h"
 
-#include "Items/Health_Item.h"
-
-
-
 AGirl::AGirl()
-
 {
-
 	PrimaryActorTick.bCanEverTick = true;
-
 	bUseControllerRotationYaw = false;
-
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-
-
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-
 	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
-
 	GetMesh()->SetGenerateOverlapEvents(true);
 
-
-
 	// Set Capsule Component Overlap
-
 	//GetCapsuleComponent()->SetGenerateOverlapEvents(true); // This allows the component to trigger overlap events
-
 	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); // This enables collision for the component
-
 	//GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap); // This makes the component overlap with all channels
 
 	bCanJumpAttack = true;
 
-
-
-	//¹«Àû ÃÊ±âÈ­
-
+	// ë¬´ì  ì´ˆê¸°í™”
 	bIsInvincible = false;
-	bWasOnGround = true; // ½ÃÀÛ ½Ã ¶¥¿¡ ÀÖ´Ù°í °¡Á¤
+	bWasOnGround = true; // ì‹œìž‘ ì‹œ ë•…ì— ìžˆë‹¤ê³  ê°€ì •
 }
-
-
 
 void AGirl::BeginPlay()
-
 {
-
 	Super::BeginPlay();
 
-
-
 	Tags.Add(FName("EngageableTarget"));
-
 	InitializeGirlOverlay();
 
-
-
 	UWorld* World = GetWorld();
-
 	if (World && WeaponClass)
-
 	{
-
 		AWeapon* DefaultWeapon = World->SpawnActor<AWeapon>(WeaponClass);
-
 		DefaultWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-
 		CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
-
 		EquippedWeapon = DefaultWeapon;
-
 	}
-
 }
 
-
-
 void AGirl::Tick(float DeltaTime)
-
 {
-
 	if (Attributes && GirlOverlay)
-
 	{
-
 		Attributes->RegenStamina(DeltaTime);
-
 		GirlOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
-
 	}
-	//Ãæµ¹ Ã³¸® (Tick ÇÔ¼ö ³»ºÎ)
+
+	// ì¶©ëŒ ì²˜ë¦¬ (Tick í•¨ìˆ˜ ë‚´ë¶€)
 	if (GetCharacterMovement())
 	{
 		bool bIsFalling = GetCharacterMovement()->IsFalling();
 
-		if (bIsFalling && bWasOnGround) // ¹æ±Ý ¶¥¿¡¼­ ¶³¾îÁ³À» ¶§ (Á¡ÇÁ Æ÷ÇÔ)
+		if (bIsFalling && bWasOnGround) // ë°©ê¸ˆ ë•…ì—ì„œ ë–¨ì–´ì¡Œì„ ë•Œ (ì í”„ í¬í•¨)
 		{
 			if (GetCapsuleComponent())
 			{
-				// ´Ù¸¥ Pawn°úÀÇ Ãæµ¹À» OverlapÀ¸·Î º¯°æ
+				// ë‹¤ë¥¸ Pawnê³¼ì˜ ì¶©ëŒì„ Overlapìœ¼ë¡œ ë³€ê²½
 				GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-				UE_LOG(LogTemp, Warning, TEXT("Girl is now Falling - Pawn Collision: Overlap"));
+				//(LogTemp, Warning, TEXT("Girl is now Falling - Pawn Collision: Overlap"));
 			}
-			bWasOnGround = false; // °øÁß¿¡ ÀÖÀ½
+			bWasOnGround = false; // ê³µì¤‘ì— ìžˆìŒ
 		}
-		else if (!bIsFalling && !bWasOnGround) // ¹æ±Ý ¶¥¿¡ ÂøÁöÇßÀ» ¶§
+		else if (!bIsFalling && !bWasOnGround) // ë°©ê¸ˆ ë•…ì— ì°©ì§€í–ˆì„ ë•Œ
 		{
 			if (GetCapsuleComponent())
 			{
-				// ´Ù¸¥ Pawn°úÀÇ Ãæµ¹À» ´Ù½Ã BlockÀ¸·Î º¯°æ
+				// ë‹¤ë¥¸ Pawnê³¼ì˜ ì¶©ëŒì„ ë‹¤ì‹œ Blockìœ¼ë¡œ ë³€ê²½
 				GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-				UE_LOG(LogTemp, Warning, TEXT("Girl is now on Ground - Pawn Collision: Block"));
+				//UE_LOG(LogTemp, Warning, TEXT("Girl is now on Ground - Pawn Collision: Block"));
 			}
-			bWasOnGround = true; // ¶¥¿¡ ÀÖÀ½
+			bWasOnGround = true; // ë•…ì— ìžˆìŒ
 		}
 	}
 }
 
-
-
 void AGirl::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-
 {
-
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-
-
 	PlayerInputComponent->BindAction(FName("Pad_A"), IE_Pressed, this, &AGirl::Keyboard_X_Gamepad_A_KeyPressed);
-
 	PlayerInputComponent->BindAction(FName("Pad_A"), IE_Released, this, &AGirl::Keyboard_X_Gamepad_A_KeyReleased);
-
 	PlayerInputComponent->BindAction(FName("Pad_B"), IE_Pressed, this, &AGirl::Keyboard_S_Gamepad_B_KeyPressed);
-
 	PlayerInputComponent->BindAction(FName("Pad_X"), IE_Pressed, this, &AGirl::Keyboard_Z_Gamepad_X_KeyPressed);
-
 	PlayerInputComponent->BindAction(FName("Pad_Y"), IE_Pressed, this, &AGirl::Keyboard_A_Gamepad_Y_KeyPressed);
-
 	PlayerInputComponent->BindAction(FName("Interact"), IE_Pressed, this, &AGirl::Up_KeyPressed);
-
-
-
+	PlayerInputComponent->BindAction(FName("Pad_Start"), IE_Pressed, this, &AGirl::PauseGame);
+	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &AGirl::PauseGame);
 }
 
-
-
-
-
 void AGirl::Keyboard_X_Gamepad_A_KeyPressed()
-
 {
-
-	if (IsOccupied() || !(Attributes && Attributes->GetStamina() > Attributes->GetJumpCost())) return;
+	if (IsOccupied() || !(Attributes && Attributes->GetStamina() > Attributes->GetJumpCost()))
+		return;
 
 	if (Attributes->GetHealthPercent() > 0.f)
-
 	{
-
 		if (ActionState == EActionState::EAS_Unoccupied)
-
 		{
-
 			Jump();
-
 		}
-
 	}
 
 	ResetComboCounter();
-
 	bCanJumpAttack = true;
 
 	if (Attributes && GirlOverlay && !GetCharacterMovement()->IsFalling())
-
 	{
-
 		Attributes->UseStamina(Attributes->GetJumpCost());
-
 		GirlOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
-
 	}
-
 }
-
-
 
 void AGirl::Keyboard_X_Gamepad_A_KeyReleased()
-
 {
-
 	StopJumping();
-
 	ResetComboCounter();
-
 }
 
-
-
 void AGirl::Keyboard_S_Gamepad_B_KeyPressed()
-
 {
-
 	if (Attributes->GetHealthPercent() > 0.f)
-
 	{
+		if (GetCharacterMovement()->IsFalling() || IsOccupied() || !(Attributes && Attributes->GetStamina() > Attributes->GetDodgeCost()))
+			return;
 
-		if (GetCharacterMovement()->IsFalling() || IsOccupied() || !(Attributes && Attributes->GetStamina() > Attributes->GetDodgeCost())) return;
-
-		// ±¸¸£±â ½ÃÀÛ ½Ã Pawn Ãæµ¹À» OverlapÀ¸·Î º¯°æ
-		bIsInvincible = true; // ¹«Àû »óÅÂ ½ÃÀÛ
+		// êµ¬ë¥´ê¸° ì‹œìž‘ ì‹œ Pawn ì¶©ëŒì„ Overlapìœ¼ë¡œ ë³€ê²½
+		bIsInvincible = true; // ë¬´ì  ìƒíƒœ ì‹œìž‘
 		if (GetCapsuleComponent())
 		{
 			GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-			UE_LOG(LogTemp, Warning, TEXT("Girl is now Dodging - Pawn Collision: Overlap"));
+			//UE_LOG(LogTemp, Warning, TEXT("Girl is now Dodging - Pawn Collision: Overlap"));
 			GetWorld()->GetTimerManager().SetTimer(
 				DodgeEffectTimerHandle,
 				this,
 				&AGirl::EndDodgeEffects,
-				DodgeDuration // DodgeDuration ¸¸Å­¸¸ ¹«Àû/Overlap À¯Áö
+				DodgeDuration // DodgeDuration ë§Œí¼ë§Œ ë¬´ì /Overlap ìœ ì§€
 			);
 		}
 
 		PlayDodgeMontage();
-
 		ActionState = EActionState::EAS_Dodge;
 
 		if (Attributes && GirlOverlay)
-
 		{
-
 			Attributes->UseStamina(Attributes->GetDodgeCost());
-
 			GirlOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
-
 		}
-
 	}
 }
 
 void AGirl::Keyboard_Z_Gamepad_X_KeyPressed()
-
 {
-
 	Super::Attack();
 
 	if (!(Attributes && Attributes->GetStamina() > Attributes->GetAttackCost()))
-
 	{
-
 		ResetComboCounter();
-
 		return;
-
 	}
 
-
 	if (!GetCharacterMovement()->IsFalling() && CanAttack())
-
 	{
-
 		PlayAttackComboMontage();
-
 		ActionState = EActionState::EAS_Attacking;
 
 		if (Attributes && GirlOverlay)
-
 		{
-
 			Attributes->UseStamina(Attributes->GetAttackCost());
-
 			GirlOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
-
 		}
-
 	}
-
 	else if (GetCharacterMovement()->IsFalling() && CanAttack() && bCanJumpAttack)
-
 	{
-
 		PlayJumpAttackMontage();
-
 		ActionState = EActionState::EAS_Attacking;
-
 		bCanJumpAttack = false;
 
 		if (Attributes && GirlOverlay)
-
 		{
-
 			Attributes->UseStamina(Attributes->GetAttackCost());
-
 			GirlOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
-
 		}
-
 	}
-
 }
 
 void AGirl::Keyboard_A_Gamepad_Y_KeyPressed()
-
 {
-
-	if (IsOccupied()) return;
-
+	if (IsOccupied())
+		return;
 }
-
-
 
 void AGirl::Up_KeyPressed()
-
 {
-
 }
 
-
 float AGirl::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-
 {
-
-	// ¹«Àû »óÅÂ¶ó¸é µ¥¹ÌÁö¸¦ ¹ÞÁö ¾ÊÀ½
-
+	// ë¬´ì  ìƒíƒœë¼ë©´ ë°ë¯¸ì§€ë¥¼ ë°›ì§€ ì•ŠìŒ
 	if (bIsInvincible)
-
 	{
-
 		return 0.f;
-
 	}
 
 	HandleDamage(DamageAmount);
-
 	SetHUDHealth();
 
-
-
-	// µ¥¹ÌÁö¸¦ ÀÔÀ¸¸é ¹«Àû »óÅÂ·Î ÀüÈ¯ÇÏ°í Å¸ÀÌ¸Ó¸¦ ½ÃÀÛ
-
+	// ë°ë¯¸ì§€ë¥¼ ìž…ìœ¼ë©´ ë¬´ì  ìƒíƒœë¡œ ì „í™˜í•˜ê³  íƒ€ì´ë¨¸ë¥¼ ì‹œìž‘
 	if (Attributes && Attributes->GetHealthPercent() > 0.f)
-
 	{
-
 		bIsInvincible = true;
-
 		GetWorld()->GetTimerManager().SetTimer(
-
 			InvincibilityTimerHandle,
-
 			this,
-
 			&AGirl::EndInvincibility,
-
 			InvincibilityDuration
-
 		);
-		// ±ôºýÀÓ È¿°ú ½ÃÀÛ
-		GetWorld()->GetTimerManager().SetTimer(FlashTimerHandle, this, &AGirl::ToggleMeshVisibility, FlashInterval, true); // true: ¹Ýº¹
+
+		// ê¹œë¹¡ìž„ íš¨ê³¼ ì‹œìž‘
+		GetWorld()->GetTimerManager().SetTimer(FlashTimerHandle, this, &AGirl::ToggleMeshVisibility, FlashInterval, true); // true: ë°˜ë³µ
 	}
 
 	return DamageAmount;
-
 }
 
-
-
 void AGirl::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
-
 {
-
-	// ¹«Àû »óÅÂÀÏ ¶§´Â ÇÇ°Ý ¸®¾×¼ÇÀ» ½ºÅµ
+	// ë¬´ì  ìƒíƒœì¼ ë•ŒëŠ” í”¼ê²© ë¦¬ì•¡ì…˜ì„ ìŠ¤í‚µ
 	//if (bIsInvincible)
 	//{
-		//return;
+	//	return;
 	//}
 
 	Super::GetHit_Implementation(ImpactPoint, Hitter);
-
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 
-
-
 	if (Attributes && Attributes->GetHealthPercent() > 0.f)
-
 	{
-
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
-
 		ActionState = EActionState::EAS_HitReaction;
-
 	}
 
 	ResetComboCounter();
-
 }
-
-
 
 void AGirl::SetOverlappingItem(AItem* Item)
-
 {
-
 	OverlappingItem = Item;
-
 }
 
-
-
 void AGirl::AddHealth(AHealth_Item* Health_Item)
-
 {
-
 	if (Attributes && GirlOverlay)
-
 	{
-
 		Attributes->AddHealth(Health_Item->GetHealth());
-
 		//GirlOverlay->SetHealth(Attributes->GetHealth());
-
 	}
 
 	SetHUDHealth();
-
 }
-
-
 
 //void AGirl::AddSouls(ASoul* Soul)
-
 //{
-
-//
-
-// if (Attributes && GirlOverlay)
-
-// {
-
-// Attributes->AddSouls(Soul->GetSouls());
-
-// GirlOverlay->SetSouls(Attributes->GetSouls());
-
-// }
-
+//	if (Attributes && GirlOverlay)
+//	{
+//		Attributes->AddSouls(Soul->GetSouls());
+//		GirlOverlay->SetSouls(Attributes->GetSouls());
+//	}
 //}
-
-
 
 //void AGirl::AddGold(ATreasure* Treasure)
-
 //{
-
-//
-
-// if (Attributes && GirlOverlay)
-
-// {
-
-// Attributes->AddGold(Treasure->GetGold());
-
-// GirlOverlay->SetGold(Attributes->GetGold());
-
-// }
-
+//	if (Attributes && GirlOverlay)
+//	{
+//		Attributes->AddGold(Treasure->GetGold());
+//		GirlOverlay->SetGold(Attributes->GetGold());
+//	}
 //}
 
-
-
 void AGirl::HitReactEnd()
-
 {
-
 	ActionState = EActionState::EAS_Unoccupied;
-
 }
-
-
 
 void AGirl::InitializeGirlOverlay()
-
 {
-
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-
 	if (PlayerController)
-
 	{
-
 		AGirlHUD* GirlHUD = Cast<AGirlHUD>(PlayerController->GetHUD());
-
 		if (GirlHUD)
-
 		{
-
 			GirlOverlay = GirlHUD->GetGirlOverlay();
-
 			if (GirlOverlay && Attributes)
-
 			{
-
 				GirlOverlay->SetHealthBarPercent(Attributes->GetHealthPercent());
-
 				GirlOverlay->SetStaminaBarPercent(1.f);
-
 				//GirlOverlay->SetGold(0);
-
 				//GirlOverlay->SetSouls(0);
-
 			}
-
 		}
-
 	}
-
 }
-
-
 
 void AGirl::SetHUDHealth()
-
 {
-
 	if (GirlOverlay && Attributes)
-
 	{
-
 		GirlOverlay->SetHealthBarPercent(Attributes->GetHealthPercent());
-
 	}
-
 }
-
-
 
 void AGirl::Die_Implementation()
-
 {
-
 	Super::Die_Implementation();
 
-
-
 	ActionState = EActionState::EAS_Dead;
-
 	DisableMeshCollision();
-
-
-
 }
 
-
-
 void AGirl::DodgeEnd()
-
 {
-
 	Super::DodgeEnd();
-
 	ActionState = EActionState::EAS_Unoccupied;
-
 	ResetComboCounter();
-	// ±¸¸£±â ¾Ö´Ï¸ÞÀÌ¼ÇÀÌ ³¡³µÀ» ¶§, ¾ÆÁ÷ È¿°ú°¡ È°¼ºÈ­µÇ¾î ÀÖ´Ù¸é °­Á¦·Î Á¾·á
-	// Å¸ÀÌ¸Ó°¡ ¸¸·áµÇ±â Àü¿¡ ¾Ö´Ï¸ÞÀÌ¼ÇÀÌ ³¡³ª¸é ¿©±â¼­ Ã³¸®
+
+	// êµ¬ë¥´ê¸° ì• ë‹ˆë©”ì´ì…˜ì´ ëë‚¬ì„ ë•Œ, ì•„ì§ íš¨ê³¼ê°€ í™œì„±í™”ë˜ì–´ ìžˆë‹¤ë©´ ê°•ì œë¡œ ì¢…ë£Œ
+	// íƒ€ì´ë¨¸ê°€ ë§Œë£Œë˜ê¸° ì „ì— ì• ë‹ˆë©”ì´ì…˜ì´ ëë‚˜ë©´ ì—¬ê¸°ì„œ ì²˜ë¦¬
 	if (GetWorld()->GetTimerManager().IsTimerActive(DodgeEffectTimerHandle))
 	{
 		EndDodgeEffects();
 	}
 }
 
-
-
 bool AGirl::CanAttack()
-
 {
-
 	return ActionState == EActionState::EAS_Unoccupied &&
-
 		CharacterState != ECharacterState::ECS_Unequipped;
-
 }
-
-
 
 void AGirl::AttackEnd()
-
 {
-
 	ActionState = EActionState::EAS_Unoccupied;
-
 }
-
-
 
 bool AGirl::HasEnoughStamina()
-
 {
-
 	return Attributes && Attributes->GetStamina() > Attributes->GetDodgeCost();
-
 }
-
-
 
 bool AGirl::IsOccupied()
-
 {
-
 	return ActionState != EActionState::EAS_Unoccupied;
-
 	//return ActionState != EActionState::EAS_Unoccupied || ActionState == EActionState::EAS_Dead;
-
 }
-
-
 
 bool AGirl::IsUnoccupied()
-
 {
-
 	return ActionState == EActionState::EAS_Unoccupied;
-
 }
-
-
 
 void AGirl::EndInvincibility()
-
 {
-
 	bIsInvincible = false;
-	// ¹«Àû ½Ã°£ÀÌ ³¡³ª¸é ±ôºýÀÓ ¸ØÃß±â
+	// ë¬´ì  ì‹œê°„ì´ ëë‚˜ë©´ ê¹œë¹¡ìž„ ë©ˆì¶”ê¸°
 	StopFlashing();
 }
-// ±ôºýÀÓ °ü·Ã ÇÔ¼ö ±¸Çö
+
+// ê¹œë¹¡ìž„ ê´€ë ¨ í•¨ìˆ˜ êµ¬í˜„
 void AGirl::ToggleMeshVisibility()
 {
 	if (GetMesh())
 	{
-		GetMesh()->SetVisibility(!GetMesh()->IsVisible()); // ÇöÀç °¡½Ã¼ºÀ» ¹ÝÀü
+		GetMesh()->SetVisibility(!GetMesh()->IsVisible()); // í˜„ìž¬ ê°€ì‹œì„±ì„ ë°˜ì „
 	}
 }
 
 void AGirl::StopFlashing()
 {
-	GetWorld()->GetTimerManager().ClearTimer(FlashTimerHandle); // ±ôºýÀÓ Å¸ÀÌ¸Ó ÇØÁ¦
+	GetWorld()->GetTimerManager().ClearTimer(FlashTimerHandle); // ê¹œë¹¡ìž„ íƒ€ì´ë¨¸ í•´ì œ
 	if (GetMesh())
 	{
-		GetMesh()->SetVisibility(true); // ¸Þ½¬¸¦ Ç×»ó º¸ÀÌµµ·Ï ¼³Á¤ (±ôºýÀÓ Áß´Ü ÈÄ)
+		GetMesh()->SetVisibility(true); // ë©”ì‰¬ë¥¼ í•­ìƒ ë³´ì´ë„ë¡ ì„¤ì • (ê¹œë¹¡ìž„ ì¤‘ë‹¨ í›„)
 	}
 }
-// ±¸¸£±â È¿°ú(¹«Àû/Overlap)¸¦ ÇØÁ¦
+
+// êµ¬ë¥´ê¸° íš¨ê³¼(ë¬´ì /Overlap)ë¥¼ í•´ì œ
 void AGirl::EndDodgeEffects()
 {
-	GetWorld()->GetTimerManager().ClearTimer(DodgeEffectTimerHandle); // ±¸¸£±â È¿°ú Å¸ÀÌ¸Ó ÇØÁ¦
-	//StopFlashing(); // ±ôºýÀÓµµ ±¸¸£±â È¿°ú Å¸ÀÌ¸Ó¿Í ÇÔ²² Á¾·á
+	GetWorld()->GetTimerManager().ClearTimer(DodgeEffectTimerHandle); // êµ¬ë¥´ê¸° íš¨ê³¼ íƒ€ì´ë¨¸ í•´ì œ
+	//StopFlashing(); // ê¹œë¹¡ìž„ë„ êµ¬ë¥´ê¸° íš¨ê³¼ íƒ€ì´ë¨¸ì™€ í•¨ê»˜ ì¢…ë£Œ
 
-	// ¹«Àû »óÅÂ´Â ´Ù¸¥ ÀÏ¹Ý ÇÇ°Ý ¹«Àû°ú ºÐ¸®µÇ¹Ç·Î, ±¸¸£±â·Î ÀÎÇÑ ¹«Àû¸¸ ÇØÁ¦
-	// ÀÏ¹Ý ÇÇ°Ý ¹«ÀûÀº InvincibilityTimerHandle¿¡¼­ °ü¸®
-	if (!GetWorld()->GetTimerManager().IsTimerActive(InvincibilityTimerHandle)) // ÀÏ¹Ý ÇÇ°Ý ¹«Àû Å¸ÀÌ¸Ó°¡ ºñÈ°¼ºÈ­µÈ °æ¿ì¿¡¸¸
+	// ë¬´ì  ìƒíƒœëŠ” ë‹¤ë¥¸ ì¼ë°˜ í”¼ê²© ë¬´ì ê³¼ ë¶„ë¦¬ë˜ë¯€ë¡œ, êµ¬ë¥´ê¸°ë¡œ ì¸í•œ ë¬´ì ë§Œ í•´ì œ
+	// ì¼ë°˜ í”¼ê²© ë¬´ì ì€ InvincibilityTimerHandleì—ì„œ ê´€ë¦¬
+	if (!GetWorld()->GetTimerManager().IsTimerActive(InvincibilityTimerHandle)) // ì¼ë°˜ í”¼ê²© ë¬´ì  íƒ€ì´ë¨¸ê°€ ë¹„í™œì„±í™”ëœ ê²½ìš°ì—ë§Œ
 	{
 		bIsInvincible = false;
 	}
@@ -699,6 +418,34 @@ void AGirl::EndDodgeEffects()
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-		UE_LOG(LogTemp, Warning, TEXT("Girl's Dodge Effects (Invincible/Overlap) Ended. Pawn Collision reset to Block."));
+		//UE_LOG(LogTemp, Warning, TEXT("Girl's Dodge Effects (Invincible/Overlap) Ended. Pawn Collision reset to Block."));
+	}
+}
+
+void AGirl::PauseGame()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		if (PauseMenuWidgetClass)
+		{
+			if (PauseMenuInstance && PauseMenuInstance->IsInViewport())
+			{
+				return;
+			}
+
+			PauseMenuInstance = CreateWidget<UUserWidget>(PlayerController, PauseMenuWidgetClass);
+			if (PauseMenuInstance)
+			{
+				PauseMenuInstance->AddToViewport();
+				PlayerController->bShowMouseCursor = true;
+
+				FInputModeUIOnly InputModeData;
+				InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				PlayerController->SetInputMode(InputModeData);
+
+				UGameplayStatics::SetGamePaused(GetWorld(), true);
+			}
+		}
 	}
 }
