@@ -24,7 +24,7 @@ private:
 
 	int32 CurrentScreenPercentage = 100;
 
-	// === ¼³Á¤ ===
+	// === ì„¤ì • ===
 	UPROPERTY(EditAnywhere, Category = "Auto Scaling")
 		float TargetFPS = 59.f;
 
