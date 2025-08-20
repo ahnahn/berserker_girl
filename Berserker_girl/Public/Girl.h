@@ -1,218 +1,124 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
-
 #pragma once
 
-
-
 #include "CoreMinimal.h"
-
 #include "BaseCharacter.h"
-
 #include "Characters/CharacterTypes.h"
-
 #include "Interfaces/PickupInterface.h"
-
+#include "Blueprint/UserWidget.h"
 #include "Girl.generated.h"
 
-
-
 class AItem;
-
 //class ASoul;
-
 //class ATreasure;
-
 class AHealth_Item;
-
 class AWeapon;
-
 class UGirlOverlay;
 
-
-
 UCLASS()
-
 class BERSERKER_GIRL_API AGirl : public ABaseCharacter, public IPickupInterface
-
 {
-
-	GENERATED_BODY()
-
-
+    GENERATED_BODY()
 
 private:
+    bool IsUnoccupied();
+    void InitializeGirlOverlay();
+    void SetHUDHealth();
 
-	bool IsUnoccupied();
+    UPROPERTY(VisibleInstanceOnly)
+        AItem* OverlappingItem;
 
-	void InitializeGirlOverlay();
+    //ë°ë¯¸ì§€ ìˆ˜ì‹  í›„ ë¬´ì  ìƒíƒœì¸ì§€/
+    bool bIsInvincible = false;
 
-	void SetHUDHealth();
+    /** ë¬´ì  ì§€ì†ì‹œê°„ì„ ê´€ë¦¬í•˜ëŠ” íƒ€ì´ë¨¸ í•¸ë“¤ */
+    FTimerHandle InvincibilityTimerHandle;
 
+    /** ë¬´ì  ì§€ì†ì‹œê°„ */
+    UPROPERTY(EditAnywhere, Category = "Combat")
+        float InvincibilityDuration = 1.0f;
 
+    /** ë¬´ì  ìƒíƒœë¥¼ í•´ì œ */
+    void EndInvincibility();
 
-	UPROPERTY(VisibleInstanceOnly)
+    UPROPERTY(EditAnywhere)
+        TSubclassOf<class AWeapon> WeaponClass;
 
-		AItem* OverlappingItem;
+    UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+        EActionState ActionState = EActionState::EAS_Unoccupied;
 
-	//µ¥¹ÌÁö ¼ö½Å ÈÄ ¹«Àû »óÅÂÀÎÁö/
+    UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+        UGirlOverlay* GirlOverlay;
 
-	bool bIsInvincible = false;
+    bool bCanJumpAttack;
+    bool bWasOnGround = true;
 
-	/** ¹«Àû Áö¼Ó½Ã°£À» °ü¸®ÇÏ´Â Å¸ÀÌ¸Ó ÇÚµé */
+    //ê¹œë¹¡ì„ íš¨ê³¼ë¥¼ ìœ„í•œ íƒ€ì´ë¨¸ì™€ í•¨ìˆ˜
+    FTimerHandle FlashTimerHandle;
+    UPROPERTY(EditAnywhere, Category = "Combat")
+        float FlashInterval = 0.1f; // ê¹œë¹¡ì„ ì£¼ê¸°
+    void ToggleMeshVisibility(); // ë©”ì‰¬ ê°€ì‹œì„±ì„ í† ê¸€
+    void StopFlashing(); // ê¹œë¹¡ì„ ë©ˆì¶”ê¸°
 
-	FTimerHandle InvincibilityTimerHandle;
-
-	/** ¹«Àû Áö¼Ó½Ã°£ */
-
-	UPROPERTY(EditAnywhere, Category = "Combat")
-
-		float InvincibilityDuration = 1.0f;
-
-
-
-	/** ¹«Àû »óÅÂ¸¦ ÇØÁ¦ */
-
-	void EndInvincibility();
-
-
-
-	UPROPERTY(EditAnywhere)
-
-		TSubclassOf<class AWeapon> WeaponClass;
-
-
-
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-
-		EActionState ActionState = EActionState::EAS_Unoccupied;
-
-
-
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-
-		UGirlOverlay* GirlOverlay;
-
-
-
-	bool bCanJumpAttack;
-	bool bWasOnGround = true;
-
-	//±ôºıÀÓ È¿°ú¸¦ À§ÇÑ Å¸ÀÌ¸Ó¿Í ÇÔ¼ö
-	FTimerHandle FlashTimerHandle;
-	UPROPERTY(EditAnywhere, Category = "Combat") float FlashInterval = 0.1f; // ±ôºıÀÓ ÁÖ±â
-	void ToggleMeshVisibility(); // ¸Ş½¬ °¡½Ã¼ºÀ» Åä±Û
-	void StopFlashing(); // ±ôºıÀÓ ¸ØÃß±â
-
-
-	// ±¸¸£±â ¿À¹ö·¦/¹«Àû ½Ã°£À» À§ÇÑ º¯¼ö ¹× ÇÔ¼ö
-	FTimerHandle DodgeEffectTimerHandle; // ±¸¸£±â ¿À¹ö·¦/¹«Àû ½Ã°£À» °ü¸®ÇÒ Å¸ÀÌ¸Ó
-	UPROPERTY(EditAnywhere, Category = "Combat") float DodgeDuration = 0.5f; // ±¸¸£±â Áß Overlap ¹× ¹«Àû À¯Áö ½Ã°£ (0.5ÃÊ)
-	void EndDodgeEffects(); // ±¸¸£±â ¿À¹ö·¦ ¹× ¹«ÀûÀ» ÇØÁ¦
+    // êµ¬ë¥´ê¸° ì˜¤ë²„ë©/ë¬´ì  ì‹œê°„ì„ ìœ„í•œ ë³€ìˆ˜ ë° í•¨ìˆ˜
+    FTimerHandle DodgeEffectTimerHandle; // êµ¬ë¥´ê¸° ì˜¤ë²„ë©/ë¬´ì  ì‹œê°„ì„ ê´€ë¦¬í•  íƒ€ì´ë¨¸
+    UPROPERTY(EditAnywhere, Category = "Combat")
+        float DodgeDuration = 0.5f; // êµ¬ë¥´ê¸° ì¤‘ Overlap ë° ë¬´ì  ìœ ì§€ ì‹œê°„ (0.5ì´ˆ)
+    void EndDodgeEffects(); // êµ¬ë¥´ê¸° ì˜¤ë²„ë© ë° ë¬´ì ì„ í•´ì œ
 
 public:
+    AGirl();
 
-	AGirl();
+    virtual void Tick(float DeltaTime) override;
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+    virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 
-	virtual void Tick(float DeltaTime) override;
+    virtual void SetOverlappingItem(AItem* Item) override;
+    //virtual void AddSouls(ASoul* Soul) override;
+    //virtual void AddGold(ATreasure* Treasure) override;
+    virtual void AddHealth(AHealth_Item* Health_Item) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    UPROPERTY(BlueprintReadWrite, EditAnywhere)
+        ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-
-	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
-
-	virtual void SetOverlappingItem(AItem* Item) override;
-
-	//virtual void AddSouls(ASoul* Soul) override;
-
-	//virtual void AddGold(ATreasure* Treasure) override;
-
-	virtual void AddHealth(AHealth_Item* Health_Item) override;
-
-
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-
-		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
-
-
-
-
-
-	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
-
-	FORCEINLINE EActionState GetActionState() const { return ActionState; }
-
-
-
-
-
-
+    FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+    FORCEINLINE EActionState GetActionState() const { return ActionState; }
 
 protected:
+    virtual void BeginPlay() override;
 
-	virtual void BeginPlay() override;
+    void Keyboard_X_Gamepad_A_KeyPressed();
+    void Keyboard_X_Gamepad_A_KeyReleased();
 
+    void Keyboard_S_Gamepad_B_KeyPressed();
+    void Keyboard_Z_Gamepad_X_KeyPressed();
+    void Keyboard_A_Gamepad_Y_KeyPressed();
 
+    void Up_KeyPressed();
 
-	void Keyboard_X_Gamepad_A_KeyPressed();
+    UFUNCTION(BlueprintCallable)
+        virtual void Die_Implementation() override;
+    //virtual void Die() override;
 
-	void Keyboard_X_Gamepad_A_KeyReleased();
+    bool HasEnoughStamina();
+    bool IsOccupied();
 
+    UFUNCTION(BlueprintCallable)
+        void HitReactEnd();
 
+    virtual void DodgeEnd() override;
 
-	void Keyboard_S_Gamepad_B_KeyPressed();
+    UFUNCTION(BlueprintCallable)
+        virtual bool CanAttack() override;
 
+    virtual void AttackEnd() override;
 
+    void PauseGame();
+    UPROPERTY(EditAnywhere, Category = "UI")
+        TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
-	void Keyboard_Z_Gamepad_X_KeyPressed();
-
-
-
-	void Keyboard_A_Gamepad_Y_KeyPressed();
-
-
-
-	void Up_KeyPressed();
-
-
-
-	UFUNCTION(BlueprintCallable)
-
-		virtual void Die_Implementation() override;
-
-
-
-	//virtual void Die() override;
-
-
-
-	bool HasEnoughStamina();
-
-	bool IsOccupied();
-
-
-
-	UFUNCTION(BlueprintCallable)
-
-		void HitReactEnd();
-
-
-
-	virtual void DodgeEnd() override;
-
-
-
-	UFUNCTION(BlueprintCallable)
-
-		virtual bool CanAttack() override;
-
-
-
-	virtual void AttackEnd() override;
-
-
-
+    UPROPERTY()
+        UUserWidget* PauseMenuInstance;
 };
