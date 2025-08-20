@@ -21,7 +21,7 @@ void UAutoScreenScalerComponent::TickComponent(float DeltaTime, ELevelTick TickT
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	float CurrentFPS = 1.0f / DeltaTime;
-	UE_LOG(LogTemp, Warning, TEXT("FPS: %.1f | DeltaTime: %.5f"), CurrentFPS, DeltaTime);
+	//UE_LOG(LogTemp, Warning, TEXT("FPS: %.1f | DeltaTime: %.5f"), CurrentFPS, DeltaTime);
 	AccumulatedTime += DeltaTime;
 	FrameCount++;
 	TimeSinceLastAdjust += DeltaTime;
@@ -29,7 +29,7 @@ void UAutoScreenScalerComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	if (AccumulatedTime >= FPSCheckIntervalSeconds && TimeSinceLastAdjust >= MinAdjustmentInterval)
 	{
 		AverageFPS = FrameCount / AccumulatedTime;
-		UE_LOG(LogTemp, Warning, TEXT("AutoScaler Tick (from FApp): FPS=%.1f"), AverageFPS);
+		//UE_LOG(LogTemp, Warning, TEXT("AutoScaler Tick (from FApp): FPS=%.1f"), AverageFPS);
 
 		UpdateScreenPercentage();
 
@@ -41,35 +41,35 @@ void UAutoScreenScalerComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 void UAutoScreenScalerComponent::UpdateScreenPercentage()
 {
-	UE_LOG(LogTemp, Warning, TEXT("AutoScaler Tick: AvgFPS=%.1f, CurrPct=%d"), AverageFPS, CurrentScreenPercentage);
+	//UE_LOG(LogTemp, Warning, TEXT("AutoScaler Tick: AvgFPS=%.1f, CurrPct=%d"), AverageFPS, CurrentScreenPercentage);
 
 
 	bool bChanged = false;
 
 	if (AverageFPS < CriticalLowFPS && CurrentScreenPercentage > MinScreenPercentage)
 	{
-		// ±ﬁ∞›«— «œ∂Ù
+		// Í∏âÍ≤©Ìïú ÌïòÎùΩ
 		CurrentScreenPercentage = FMath::Max(CurrentScreenPercentage - AggressiveDropStep, MinScreenPercentage);
 		bChanged = true;
 	}
 	else if (AverageFPS < TargetFPS && CurrentScreenPercentage > MinScreenPercentage)
 	{
-		// √µ√µ»˜ «œ∂Ù
+		// Ï≤úÏ≤úÌûà ÌïòÎùΩ
 		CurrentScreenPercentage = FMath::Max(CurrentScreenPercentage - 1, MinScreenPercentage);
 		bChanged = true;
 	}
 	else if (AverageFPS >= TargetFPS && CurrentScreenPercentage < MaxScreenPercentage)
 	{
-		// √µ√µ»˜ »∏∫π
+		// Ï≤úÏ≤úÌûà ÌöåÎ≥µ
 		CurrentScreenPercentage = FMath::Min(CurrentScreenPercentage + 1, MaxScreenPercentage);
 		bChanged = true;
 	}
-	// TargetFPS ~ TargetFPS+Margin ±∏∞£ø°º≠¥¬ ∫Ø»≠ æ¯¿Ω
+	// TargetFPS ~ TargetFPS+Margin Íµ¨Í∞ÑÏóêÏÑúÎäî Î≥ÄÌôî ÏóÜÏùå
 
 	if (bChanged)
 	{
 		FString Command = FString::Printf(TEXT("r.ScreenPercentage %d"), CurrentScreenPercentage);
 		GEngine->Exec(GetWorld(), *Command);
-		UE_LOG(LogTemp, Warning, TEXT("r.ScreenPercentage adjusted to: %d"), CurrentScreenPercentage);
+		//UE_LOG(LogTemp, Warning, TEXT("r.ScreenPercentage adjusted to: %d"), CurrentScreenPercentage);
 	}
 }
