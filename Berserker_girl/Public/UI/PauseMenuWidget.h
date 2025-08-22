@@ -45,6 +45,8 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI Widgets")
         TSubclassOf<UUserWidget> OptionsWidgetClass;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI Widgets")
+        TSubclassOf<UUserWidget> QuitConfirmWidgetClass;
 private:
     void OpenMainMenu();
     void QuitTheGame();
