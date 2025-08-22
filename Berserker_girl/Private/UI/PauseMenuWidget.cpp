@@ -92,10 +92,19 @@ void UPauseMenuWidget::OnQuitClicked()
         UGameplayStatics::PlaySound2D(this, ClickSound);
     }
 
-    UGameplayStatics::SetGamePaused(this, false);
+    //UGameplayStatics::SetGamePaused(this, false);
 
-    FTimerHandle QuitTimerHandle;
-    GetWorld()->GetTimerManager().SetTimer(QuitTimerHandle, this, &UPauseMenuWidget::QuitTheGame, 0.3f, false);
+    //FTimerHandle QuitTimerHandle;
+    //GetWorld()->GetTimerManager().SetTimer(QuitTimerHandle, this, &UPauseMenuWidget::QuitTheGame, 0.3f, false);
+    if (QuitConfirmWidgetClass)
+    {
+        APlayerController* PlayerController = GetOwningPlayer();
+        if (PlayerController)
+        {
+            RemoveFromParent();
+            CreateWidget<UUserWidget>(PlayerController, QuitConfirmWidgetClass)->AddToViewport();
+        }
+    }
 }
 
 void UPauseMenuWidget::QuitTheGame()
