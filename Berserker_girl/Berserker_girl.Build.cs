@@ -20,7 +20,8 @@ public class Berserker_girl : ModuleRules
             "UMG",
             "AIModule",
             "Slate",
-            "SlateCore"
+            "SlateCore",
+            "CinematicCamera"
         });
     }
 }
